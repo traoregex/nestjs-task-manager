@@ -1,3 +1,4 @@
+import { User } from './../auth/user.entity';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { Task } from './task.entity';
@@ -6,12 +7,17 @@ import { TaskStatus } from './task-atatus.enum';
 
 @EntityRepository(Task)
 export class TaskRepository extends Repository<Task> {
-  async getTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
+  async getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
     const { status, search } = filterDto;
     const query = this.createQueryBuilder('task');
 
+    // query.where('task.userId = :userId', { userId: user.id });
+
+    query.where({ user: user.id });
+
     if (status) {
-      query.andWhere('status = :status', { status });
+      // query.andWhere('status = :status', { status });
+      query.andWhere({ status: status });
     }
 
     if (search) {
@@ -28,14 +34,19 @@ export class TaskRepository extends Repository<Task> {
     return tasks;
   }
 
-  async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+  async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
     const task = new Task();
     const { title, description } = createTaskDto;
 
     task.title = title;
     task.description = description;
     task.status = TaskStatus.OPEN;
+    task.user = user;
 
-    return await task.save();
+    await task.save();
+
+    task.user = undefined;
+
+    return task;
   }
 }
